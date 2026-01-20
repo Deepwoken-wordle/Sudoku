@@ -19,6 +19,8 @@
         margin: 20px auto;
     }
 
+    <p id="message" style="font-size:18px; font-weight:bold;"></p>
+
     td {
         width: 40px;
         height: 40px;
@@ -48,6 +50,29 @@
         margin: 10px;
         font-size: 16px;
     }
+
+    input {
+    width: 38px;
+    height: 38px;
+    border: none;
+    text-align: center;
+    font-size: 20px;
+    }
+    
+    input:focus {
+        outline: none;
+        background: #e0f0ff;
+    }
+    
+    .fixed {
+        background: #ddd;
+        font-weight: bold;
+    }
+    
+    .invalid {
+        background: #ffcccc;
+    }
+    
 </style>
 </head>
 <body>
@@ -67,6 +92,7 @@
 <script>
 const SIZE = 9;
 let grid = [];
+let solution = [];
 
 /* Utility functions */
 function shuffle(array) {
@@ -77,9 +103,9 @@ function shuffle(array) {
     return array;
 }
 
-function isSafe(row, col, num) {
+function isSafe(row, col, num, board = grid) {
     for (let x = 0; x < SIZE; x++) {
-        if (grid[row][x] === num || grid[x][col] === num) return false;
+        if (board[row][x] === num || board[x][col] === num) return false;
     }
 
     let startRow = row - row % 3;
@@ -87,7 +113,7 @@ function isSafe(row, col, num) {
 
     for (let r = 0; r < 3; r++) {
         for (let c = 0; c < 3; c++) {
-            if (grid[startRow + r][startCol + c] === num) return false;
+            if (board[startRow + r][startCol + c] === num) return false;
         }
     }
     return true;
@@ -113,10 +139,7 @@ function fillGrid() {
 }
 
 function removeNumbers(level) {
-    let removals;
-    if (level === "easy") removals = 35;
-    if (level === "medium") removals = 45;
-    if (level === "hard") removals = 55;
+    let removals = level === "easy" ? 35 : level === "medium" ? 45 : 55;
 
     while (removals > 0) {
         let row = Math.floor(Math.random() * SIZE);
@@ -136,16 +159,81 @@ function drawGrid() {
         let row = document.createElement("tr");
         for (let c = 0; c < SIZE; c++) {
             let cell = document.createElement("td");
-            cell.textContent = grid[r][c] === 0 ? "" : grid[r][c];
+
+            if (grid[r][c] === 0) {
+                let input = document.createElement("input");
+                input.maxLength = 1;
+                input.dataset.row = r;
+                input.dataset.col = c;
+
+                input.addEventListener("input", handleInput);
+                cell.appendChild(input);
+            } else {
+                cell.textContent = grid[r][c];
+                cell.classList.add("fixed");
+            }
+
             row.appendChild(cell);
         }
         table.appendChild(row);
     }
 }
 
+function handleInput(e) {
+    const input = e.target;
+    const value = parseInt(input.value);
+    const row = input.dataset.row;
+    const col = input.dataset.col;
+
+    input.classList.remove("invalid");
+
+    if (!value || value < 1 || value > 9) {
+        input.value = "";
+        return;
+    }
+
+    if (value !== solution[row][col]) {
+        input.classList.add("invalid");
+    }
+
+    checkGameStatus();
+}
+
+function checkGameStatus() {
+    let inputs = document.querySelectorAll("input");
+    let filled = true;
+
+    for (let input of inputs) {
+        if (input.value === "") {
+            filled = false;
+            break;
+        }
+    }
+
+    if (!filled) return;
+
+    for (let input of inputs) {
+        let r = input.dataset.row;
+        let c = input.dataset.col;
+        if (parseInt(input.value) !== solution[r][c]) {
+            document.getElementById("message").textContent = "❌ Väärä ratkaisu. Kokeile uudestaan!";
+            document.getElementById("message").style.color = "red";
+            return;
+        }
+    }
+
+    document.getElementById("message").textContent = "🎉 Onnittelut! Selvitit Sudokun!";
+    document.getElementById("message").style.color = "green";
+}
+
 function generateSudoku() {
+    document.getElementById("message").textContent = "";
+
     grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
     fillGrid();
+
+    solution = grid.map(row => row.slice());
+
     const difficulty = document.getElementById("difficulty").value;
     removeNumbers(difficulty);
     drawGrid();
@@ -157,4 +245,5 @@ generateSudoku();
 
 </body>
 </html>
+
 
